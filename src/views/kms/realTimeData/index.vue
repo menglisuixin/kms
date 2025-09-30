@@ -162,7 +162,6 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改关键指标实时数据对话框 -->
     <el-dialog
       :title="title"
       v-model="open"
@@ -218,7 +217,6 @@ import {
   addRealTimeData,
   updateRealTimeData,
 } from "@/api/kms/realTimeData";
-
 const { proxy } = getCurrentInstance();
 
 const realTimeDataList = ref([]);
