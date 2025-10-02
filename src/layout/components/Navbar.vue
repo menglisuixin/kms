@@ -30,7 +30,6 @@
         >
           <div class="avatar-wrapper">
             <img :src="userStore.avatar" class="user-avatar" />
-            <el-icon><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
@@ -183,7 +182,7 @@ function setLayout() {
           cursor: pointer;
           width: 40px;
           height: 40px;
-          border-radius: 10px;
+          border-radius: 50%;
         }
 
         i {

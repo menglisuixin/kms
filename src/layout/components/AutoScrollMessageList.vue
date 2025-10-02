@@ -1,11 +1,6 @@
 <template>
   <div class="messageContainer" :style="styleObject">
-    <div
-      class="scroll-view"
-      ref="scrollViewRef"
-      @mouseenter="pauseOnHover"
-      @mouseleave="resumeOnLeave"
-    >
+    <div class="scroll-view" ref="scrollViewRef">
       <div ref="listRef">
         <div
           class="item"
@@ -68,6 +63,7 @@ function toCssSize(v?: string | number) {
 const styleObject = computed(() => ({
   height: toCssSize(props.height),
   width: toCssSize(props.width),
+  cursor: "default",
 }));
 
 const bgColors = computed(() => {
@@ -159,9 +155,6 @@ const stopScroll = () => {
     animationFrameId = null;
   }
 };
-
-const pauseOnHover = () => stopScroll();
-const resumeOnLeave = () => startScroll();
 
 onMounted(() => {
   nextTick(() => {
