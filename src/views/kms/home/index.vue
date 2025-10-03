@@ -128,7 +128,6 @@ const initChart = (data) => {
     },
     xAxis: {
       type: "category",
-      // 修改：直接使用数据，不反转
       data: data.map((item) => item.collectTime),
       boundaryGap: false,
       axisLine: {
