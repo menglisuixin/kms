@@ -1,6 +1,5 @@
 <template>
   <div class="app-container">
-    <!-- 指标卡片 -->
     <el-row :gutter="20" class="mb-4">
       <el-col :span="8">
         <el-card>
