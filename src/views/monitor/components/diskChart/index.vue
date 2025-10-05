@@ -37,8 +37,7 @@ function updateDiskChart(sysFiles) {
   if (!diskChart || !sysFiles || sysFiles.length === 0) {
     return;
   }
-
-  const myColor = ["#1089E7", "#F57474", "#56D0E3", "#F8B448", "#8B78F6"];
+  // const myColor = ["#1089E7", "#F57474", "#52c41a", "#F8B448", "#8B78F6"];
   const dirNames = sysFiles.map((file) => file.dirName);
   const usages = sysFiles.map((file) => file.usage);
   const totalSize = sysFiles.map((file) => file.total);
@@ -103,12 +102,14 @@ function updateDiskChart(sysFiles) {
         itemStyle: {
           barBorderRadius: 20,
           color: function (params) {
-            // 如果使用率超过80%，使用红色
-            if (params.data > 80) {
-              return "#F57474";
+            const usage = params.data;
+            if (usage > 80) {
+              return "#F57474"; // 红色
+            } else if (usage > 60) {
+              return "#1089E7"; // 蓝色
+            } else {
+              return "#52c41a"; // 绿色
             }
-            var num = myColor.length;
-            return myColor[params.dataIndex % num];
           },
         },
         label: {
