@@ -268,7 +268,6 @@ const loadSystemConfig = async () => {
       url: "/kms/system/config",
       method: "get",
     });
-    console.log(res);
 
     // 将数据按资源类型分类
     cpuConfigData.value = res.data.filter(
@@ -309,10 +308,10 @@ onMounted(async () => {
   color: #606266;
   cursor: help;
 }
-::v-deep .el-table__header {
+:deep(.el-table__header) {
   width: 100% !important;
 }
-::v-deep .el-table__body {
+:deep(.el-table__body) {
   width: 100% !important;
 }
 </style>

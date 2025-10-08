@@ -22,7 +22,11 @@
     <!-- 预警列表（复用若依Table组件） -->
     <el-card>
       <el-table v-loading="loading" :data="warningList" border>
-        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column label="序号" align="center" width="80">
+          <template #default="scope">
+            <span>{{ scope.row.serialNumber }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="warningType" label="预警类型" />
         <el-table-column prop="warningLevel" label="预警级别" />
         <el-table-column prop="analysisTime" label="预警时间" />
@@ -92,7 +96,13 @@ const getWarningList = async () => {
       },
     });
     // 若依分页接口返回{code, msg, total, rows}，分别赋值
-    warningList.value = res.rows || [];
+    const rows = res.rows || [];
+    // 为数据添加前端序号
+    const processedRows = rows.map((row, index) => ({
+      ...row,
+      serialNumber: (pageNum.value - 1) * pageSize.value + index + 1
+    }));
+    warningList.value = processedRows;
     total.value = res.total || 0;
   } catch (error) {
     console.error("加载预警列表失败：", error);
