@@ -32,11 +32,12 @@
           :formatter="formatHandled"
         />
       </el-table>
-      <el-pagination
+      <pagination
+        v-show="total > 0"
         :total="total"
         v-model:page="pageNum"
-        v-model:page-size="pageSize"
-        @current-change="getList"
+        v-model:limit="pageSize"
+        @pagination="getWarningList"
       />
     </el-card>
   </div>
@@ -45,6 +46,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import service from "@/utils/request";
+import Pagination from "@/components/Pagination/index.vue";
 const warningLoading = ref(false); // 列表加载态
 const countLoading = ref(false); // 统计数据加载态
 const warningList = ref([]); // 预警列表数据

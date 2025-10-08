@@ -3,20 +3,22 @@
     <!-- 页面标题与操作区 -->
     <el-breadcrumb separator="/" class="mb-4">
       <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
-      <el-breadcrumb-item :to="{ path: '/kms' }">KMS监测系统</el-breadcrumb-item>
+      <el-breadcrumb-item :to="{ path: '/kms' }">
+        KMS监测系统</el-breadcrumb-item
+      >
       <el-breadcrumb-item>系统运维</el-breadcrumb-item>
     </el-breadcrumb>
 
-    <el-row :gutter="20" class="mb-6">
+    <el-row
+      :gutter="20"
+      class="mb-6"
+      style="margin-bottom: 20px; margin-top: 20px"
+    >
       <el-col :span="24">
         <el-card>
-          <div slot="header" class="card-header-flex">
+          <template #header>
             <span class="card-title">模块运行状态</span>
-            <el-button type="primary" size="mini" @click="refreshStatus">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
-
+          </template>
           <!-- 状态表格 -->
           <el-table
             v-loading="statusLoading"
@@ -25,54 +27,160 @@
             stripe
             style="width: 100%"
           >
-            <el-table-column prop="module" label="模块名称" align="center" width="200" />
-            <el-table-column prop="status" label="运行状态" align="center" width="200">
+            <el-table-column
+              prop="module"
+              label="模块名称"
+              align="center"
+              width="200"
+            />
+            <el-table-column
+              prop="status"
+              label="运行状态"
+              align="center"
+              width="200"
+            >
               <template #default="scope">
                 <el-tag
-                  :type="scope.row.status === '运行中' || scope.row.status === '连接正常' ? 'success' : 'danger'"
+                  :type="
+                    scope.row.status === '运行中' ||
+                    scope.row.status === '连接正常'
+                      ? 'success'
+                      : 'danger'
+                  "
                   size="medium"
                 >
                   {{ scope.row.status }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="description" label="模块描述" align="center" />
-            <el-table-column prop="checkTime" label="最后检查时间" align="center" width="200" />
+            <el-table-column
+              prop="description"
+              label="模块描述"
+              align="center"
+            />
+            <el-table-column
+              prop="checkTime"
+              label="最后检查时间"
+              align="center"
+              width="200"
+            />
           </el-table>
         </el-card>
       </el-col>
     </el-row>
 
     <el-row :gutter="20">
-      <el-col :span="24">
+      <!-- CPU预警阈值配置 -->
+      <el-col :span="8">
         <el-card>
-          <div slot="header" class="card-header-flex">
-            <span class="card-title">预警阈值配置</span>
-            <el-tooltip content="配置值为百分比，超过该值触发预警" placement="top">
-              <el-icon class="info-icon"><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </div>
-
-          <!-- 阈值配置表格 -->
+          <template #header>
+            <span class="card-title">CPU预警阈值配置</span>
+          </template>
           <el-table
             v-loading="configLoading"
-            :data="configTableData"
+            :data="cpuConfigData"
+            border
+            stripe
+          >
+            <el-table-column label="阈值区间（%）" align="center" width="120">
+              <template #default="scope">
+                <span class="config-value">
+                  {{ scope.row.range }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="warningLevel"
+              label="预警级别"
+              align="center"
+              width="100"
+            >
+              <template #default="scope">
+                <el-tag
+                  :type="getWarningLevelType(scope.row.warningLevel)"
+                  size="medium"
+                >
+                  {{ scope.row.warningLevel }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+
+      <!-- 内存预警阈值配置 -->
+      <el-col :span="8">
+        <el-card>
+          <template #header>
+            <span class="card-title">内存预警阈值配置</span>
+          </template>
+          <el-table
+            v-loading="configLoading"
+            :data="memoryConfigData"
             border
             stripe
             style="width: 100%"
           >
-            <el-table-column prop="configKey" label="配置项" align="center" width="200">
+            <el-table-column label="阈值区间（%）" align="center" width="120">
               <template #default="scope">
-                <span>{{ formatConfigKey(scope.row.configKey) }}</span>
+                <span class="config-value">
+                  {{ scope.row.range }}
+                </span>
               </template>
             </el-table-column>
-            <el-table-column prop="configValue" label="阈值（%）" align="center" width="150">
+            <el-table-column
+              prop="warningLevel"
+              label="预警级别"
+              align="center"
+              width="100"
+            >
               <template #default="scope">
-                <span class="config-value">{{ scope.row.configValue }}</span>
+                <el-tag
+                  :type="getWarningLevelType(scope.row.warningLevel)"
+                  size="medium"
+                >
+                  {{ scope.row.warningLevel }}
+                </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="remark" label="配置说明" align="center" />
-            <el-table-column prop="updateTime" label="更新时间" align="center" width="200" />
+          </el-table>
+        </el-card>
+      </el-col>
+
+      <!-- 磁盘预警阈值配置 -->
+      <el-col :span="8">
+        <el-card style="width: 100%">
+          <template #header>
+            <span class="card-title">磁盘预警阈值配置</span>
+          </template>
+          <el-table
+            v-loading="configLoading"
+            :data="diskConfigData"
+            border
+            style="width: 100%"
+          >
+            <el-table-column label="阈值区间（%）" align="center" width="120">
+              <template #default="scope">
+                <span class="config-value">
+                  {{ scope.row.range }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="warningLevel"
+              label="预警级别"
+              align="center"
+              width="100"
+            >
+              <template #default="scope">
+                <el-tag
+                  :type="getWarningLevelType(scope.row.warningLevel)"
+                  size="medium"
+                >
+                  {{ scope.row.warningLevel }}
+                </el-tag>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-col>
@@ -91,16 +199,19 @@ import { formatDate } from "@/utils/index";
 const statusLoading = ref(false);
 const configLoading = ref(false);
 const statusTableData = ref([]);
-const configTableData = ref([]);
+const cpuConfigData = ref([]);
+const memoryConfigData = ref([]);
+const diskConfigData = ref([]);
 
-// 工具函数：格式化配置项名称
-const formatConfigKey = (key) => {
-  const keyMap = {
-    cpuThreshold: "CPU预警阈值",
-    memThreshold: "内存预警阈值",
-    diskThreshold: "磁盘预警阈值",
+// 工具函数：获取预警级别对应的标签类型
+const getWarningLevelType = (level) => {
+  const levelMap = {
+    无预警: "success",
+    基础预警: "info",
+    中级预警: "warning",
+    严重预警: "danger",
   };
-  return keyMap[key] || key;
+  return levelMap[level] || "default";
 };
 
 // 2. 【核心修复】加载模块状态（使用service直接调用）
@@ -157,21 +268,23 @@ const loadSystemConfig = async () => {
       url: "/kms/system/config",
       method: "get",
     });
-    // 格式化更新时间
-    configTableData.value = res.data.map((item) => ({
-      ...item,
-      updateTime: formatDate(item.updateTime, "yyyy-MM-dd HH:mm:ss"),
-    }));
+    console.log(res);
+
+    // 将数据按资源类型分类
+    cpuConfigData.value = res.data.filter(
+      (item) => item.resource === "CPU使用率"
+    );
+    memoryConfigData.value = res.data.filter(
+      (item) => item.resource === "内存使用率"
+    );
+    diskConfigData.value = res.data.filter(
+      (item) => item.resource === "磁盘使用率"
+    );
   } catch (error) {
     console.error("加载阈值配置失败", error);
   } finally {
     configLoading.value = false;
   }
-};
-
-// 刷新状态
-const refreshStatus = async () => {
-  await loadSystemStatus();
 };
 
 // 页面初始化
@@ -195,5 +308,11 @@ onMounted(async () => {
   margin-left: 8px;
   color: #606266;
   cursor: help;
+}
+::v-deep .el-table__header {
+  width: 100% !important;
+}
+::v-deep .el-table__body {
+  width: 100% !important;
 }
 </style>
