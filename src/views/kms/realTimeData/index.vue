@@ -246,7 +246,6 @@
     <pagination
       v-show="total > 0"
       :total="total"
-      :page-sizes="[12, 18, 24, 45]"
       v-model:page="queryParams.pageNum"
       v-model:limit="queryParams.pageSize"
       @pagination="getList"
@@ -255,7 +254,7 @@
 </template>
 
 <script setup name="RealTimeData">
-import { listRealTimeData, addRealTimeData } from "@/api/kms/realTimeData";
+import { listRealTimeData } from "@/api/kms/realTimeData";
 const { proxy } = getCurrentInstance();
 
 const realTimeDataList = ref([]);
@@ -266,13 +265,11 @@ const total = ref(0);
 const title = ref("");
 // 用于存储合并行的信息
 const mergeRowRecord = ref({});
-// 用于存储按时间点分组的数据
-const timeGroupedData = ref([]);
 const data = reactive({
   form: {},
   queryParams: {
     pageNum: 1,
-    pageSize: 12,
+    pageSize: 10, // 恢复为标准默认值
     cpuUsage: null,
     memUsage: null,
     diskUsage: null,
@@ -288,15 +285,69 @@ function getList() {
   loading.value = true;
   listRealTimeData(queryParams.value).then((response) => {
     console.log(response);
-    // 处理数据，添加前端序号并为合并行做准备
-    const processedData = processDataForTable(response.rows);
-    // 根据分页参数截取当前页需要显示的时间点数据
-    const paginatedData = paginateByTimeGroup(processedData);
-    realTimeDataList.value = paginatedData;
-    // 设置总条数为时间点的数量
-    total.value = getUniqueTimePointCount(response.rows);
+    // 处理数据，解析diskData字段
+    const processedData = processDataWithDiskInfo(response.rows);
+    // 直接使用处理后的数据
+    realTimeDataList.value = processedData;
+    // 使用接口返回的总条数
+    total.value = response.total;
     loading.value = false;
   });
+}
+
+/** 处理包含diskData字段的数据 */
+function processDataWithDiskInfo(data) {
+  if (!data || data.length === 0) return [];
+
+  let result = [];
+
+  data.forEach((item) => {
+    try {
+      // 解析diskData JSON字符串
+      const diskData = JSON.parse(item.diskData || "[]");
+
+      // 如果没有磁盘数据，创建一个空记录
+      if (!diskData || diskData.length === 0) {
+        result.push({
+          ...item,
+          diskPath: "",
+          diskUsage: 0,
+          diskTotal: 0,
+          diskUsed: 0,
+          diskFree: 0,
+          diskType: "",
+        });
+      } else {
+        // 为每个磁盘创建一条记录
+        diskData.forEach((disk) => {
+          result.push({
+            ...item,
+            diskPath: disk.path || "",
+            diskUsage: disk.usage || 0,
+            diskTotal: disk.total || 0,
+            diskUsed: disk.used || 0,
+            diskFree: disk.free || 0,
+            diskType: disk.type || "",
+          });
+        });
+      }
+    } catch (error) {
+      console.error("解析diskData失败:", error);
+      // 出错时创建一条空记录
+      result.push({
+        ...item,
+        diskPath: "",
+        diskUsage: 0,
+        diskTotal: 0,
+        diskUsed: 0,
+        diskFree: 0,
+        diskType: "",
+      });
+    }
+  });
+
+  // 调用原有处理函数进行排序和添加序号
+  return processDataForTable(result);
 }
 
 /** 处理表格数据，添加前端序号并准备合并行信息 */
@@ -317,76 +368,27 @@ function processDataForTable(data) {
   mergeRowRecord.value = {};
 
   // 为每组相同时间点的数据分配相同的序号
-  let currentSerialNumber = 1;
+  // 计算当前页的起始序号（考虑分页）
+  const startSerialNumber =
+    (queryParams.value.pageNum - 1) * queryParams.value.pageSize + 1;
+  let currentTimePointIndex = 0; // 当前时间点索引
   let lastCollectTime = null;
 
   data.forEach((item, index) => {
     if (index === 0 || item.collectTime !== lastCollectTime) {
-      // 新的时间点，序号加1
-      currentSerialNumber++;
+      // 新的时间点，序号增加
+      currentTimePointIndex++;
     }
 
-    // 存储序号(减1是因为第一次进来就加1了)
-    item.serialNumber = currentSerialNumber - 1;
+    // 计算连续序号：起始序号 + 当前时间点索引 - 1
+    item.serialNumber = startSerialNumber + currentTimePointIndex - 1;
     lastCollectTime = item.collectTime;
   });
 
   // 计算需要合并的行
   calculateMergeRows(data);
 
-  // 保存按时间点分组的数据
-  saveTimeGroupedData(data);
-
   return data;
-}
-
-/** 保存按时间点分组的数据 */
-function saveTimeGroupedData(data) {
-  const groups = [];
-  let currentGroup = [];
-  let lastCollectTime = null;
-
-  data.forEach((item, index) => {
-    if (index === 0 || item.collectTime !== lastCollectTime) {
-      // 新的时间点，保存上一组并开始新的一组
-      if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-      }
-      currentGroup = [item];
-    } else {
-      // 同一时间点，添加到当前组
-      currentGroup.push(item);
-    }
-    lastCollectTime = item.collectTime;
-  });
-
-  // 添加最后一组
-  if (currentGroup.length > 0) {
-    groups.push(currentGroup);
-  }
-
-  timeGroupedData.value = groups;
-}
-
-/** 根据分页参数截取当前页需要显示的时间点数据 */
-function paginateByTimeGroup(originalData) {
-  // 从已保存的分组数据中获取当前页需要显示的时间点
-  const startIndex =
-    (queryParams.value.pageNum - 1) * queryParams.value.pageSize;
-  const endIndex = startIndex + queryParams.value.pageSize;
-  const currentPageGroups = timeGroupedData.value.slice(startIndex, endIndex);
-
-  // 将分组数据展平为一维数组
-  return currentPageGroups.flat();
-}
-
-/** 获取唯一时间点的数量 */
-function getUniqueTimePointCount(data) {
-  if (!data || data.length === 0) return 0;
-
-  // 使用Set去重
-  const uniqueTimePoints = new Set(data.map((item) => item.collectTime));
-  return uniqueTimePoints.size;
 }
 
 /** 计算需要合并的行 */
@@ -423,7 +425,7 @@ function calculateMergeRows(data) {
 /** 合并行的方法 */
 function mergeRowMethod({ row, column, rowIndex, columnIndex }) {
   // 需要合并的列：序号、CPU相关、内存相关、采集时间、数据有效性
-  const mergeColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 17];
+  const mergeColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 15, 16];
 
   if (mergeColumns.includes(columnIndex)) {
     // 如果当前行有合并信息，返回合并配置

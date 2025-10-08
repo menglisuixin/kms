@@ -113,7 +113,12 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column type="index" label="序号" width="60"/>
+      <!-- 修改序号列为自定义计算的连续序号 -->
+      <el-table-column label="序号" width="60" align="center">
+        <template #default="scope">
+          <span>{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="预警类型" align="center" prop="warningType" />
       <el-table-column label="预警级别" align="center" prop="warningLevel" />
       <el-table-column
@@ -132,7 +137,6 @@
         <template #default="scope">
           <el-tag
             :type="scope.row.isHandled === 0 ? 'danger' : 'success'"
-            size="medium"
             >{{ scope.row.isHandled === 0 ? "未处理" : "已处理" }}</el-tag
           >
         </template>
@@ -305,6 +309,7 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   loading.value = true;
   listAnalysisResult(queryParams.value).then((response) => {
+    console.log(response);
     analysisResultList.value = response.rows;
     total.value = response.total;
     loading.value = false;
@@ -376,7 +381,7 @@ function handleWarning(row) {
   const _id = row && row.id;
   if (!_id) return;
   proxy.$modal
-    .confirm('是否确认将当前时刻该项预警标记为已处理？')
+    .confirm("是否确认将当前时刻该项预警标记为已处理？")
     .then(function () {
       return handleAnalysisResult({ id: _id });
     })

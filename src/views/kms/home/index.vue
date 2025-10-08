@@ -63,13 +63,9 @@ const latestData = ref({
   memUsed: 0,
   memFree: 0,
 });
+// 修改磁盘数据结构为数组，支持任意数量的磁盘
 const latestDiskData = ref({
-  diskC: 0,
-  diskD: 0,
-  diskE: 0,
-  diskCInfo: { type: "", total: 0, used: 0, free: 0 },
-  diskDInfo: { type: "", total: 0, used: 0, free: 0 },
-  diskEInfo: { type: "", total: 0, used: 0, free: 0 },
+  disks: [] // 存储所有磁盘信息的数组
 });
 
 const TIME_POINT_COUNT = 20; // 要保留的时间点数量
@@ -88,16 +84,12 @@ const formatTime = (timeStr) => {
   return timeStr.split(" ")[1];
 };
 
-// 2. 核心排序逻辑：先按时间倒序，同一时间按磁盘路径（C→D→E）正序
+// 2. 核心排序逻辑：先按时间倒序
 const sortData = (rawData) => {
   const data = [...rawData];
   return data.sort((a, b) => {
     // 按时间倒序（最新在前）
-    const timeCompare = new Date(b.collectTime) - new Date(a.collectTime);
-    if (timeCompare !== 0) return timeCompare;
-    // 同一时间按磁盘路径正序（C:\→D:\→E:\）
-    const diskOrder = { "C:\\": 1, "D:\\": 2, "E:\\": 3 };
-    return diskOrder[a.diskPath] - diskOrder[b.diskPath];
+    return new Date(b.collectTime) - new Date(a.collectTime);
   });
 };
 
@@ -106,6 +98,7 @@ const extractLatestData = (sortedData) => {
   if (sortedData.length === 0) return;
 
   const firstItem = sortedData[0];
+  // 提取CPU和内存数据
   latestData.value = {
     cpuUsage: Number(firstItem.cpuUsage) || 0,
     cpuUserUsage: Number(firstItem.cpuUserUsage) || 0,
@@ -117,66 +110,60 @@ const extractLatestData = (sortedData) => {
     memFree: Number(firstItem.memFree) || 0,
   };
 
-  // 提取同一时间的3条磁盘记录
-  const latestTime = firstItem.collectTime;
-  const sameTimeItems = sortedData.filter(
-    (item) => item.collectTime === latestTime
-  );
-  sameTimeItems.forEach((item) => {
-    switch (item.diskPath) {
-      case "C:\\":
-        latestDiskData.value.diskC = Number(item.diskUsage) || 0;
-        latestDiskData.value.diskCInfo = {
-          type: item.diskType || "",
-          total: Number(item.diskTotal) || 0,
-          used: Number(item.diskUsed) || 0,
-          free: Number(item.diskFree) || 0,
-        };
-        break;
-      case "D:\\":
-        latestDiskData.value.diskD = Number(item.diskUsage) || 0;
-        latestDiskData.value.diskDInfo = {
-          type: item.diskType || "",
-          total: Number(item.diskTotal) || 0,
-          used: Number(item.diskUsed) || 0,
-          free: Number(item.diskFree) || 0,
-        };
-        break;
-      case "E:\\":
-        latestDiskData.value.diskE = Number(item.diskUsage) || 0;
-        latestDiskData.value.diskEInfo = {
-          type: item.diskType || "",
-          total: Number(item.diskTotal) || 0,
-          used: Number(item.diskUsed) || 0,
-          free: Number(item.diskFree) || 0,
-        };
-        break;
+  // 提取磁盘数据（实际数据在diskData字段，且是JSON字符串）
+  if (firstItem.diskData) {
+    try {
+      // 解析JSON字符串
+      const disks = JSON.parse(firstItem.diskData);
+      console.log("解析到的磁盘数据:", disks);
+
+      // 清空之前的磁盘数据
+      latestDiskData.value.disks = [];
+
+      if (Array.isArray(disks)) {
+        disks.forEach((disk) => {
+          // 动态添加所有磁盘信息，不再硬编码C/D/E盘
+          latestDiskData.value.disks.push({
+            path: disk.path || "",
+            usage: Number(disk.usage) || 0,
+            type: disk.type || "",
+            total: Number(disk.total) || 0,
+            used: Number(disk.used) || 0,
+            free: Number(disk.free) || 0,
+            // 添加显示名称，如C盘、D盘等
+            displayName: getDiskDisplayName(disk.path)
+          });
+        });
+      }
+    } catch (error) {
+      console.error("解析磁盘数据失败：", error);
     }
-  });
+  }
 };
 
-// 4. 获取历史数据：pageSize=60（20个时间点×3条记录）
+// 辅助函数：获取磁盘显示名称
+const getDiskDisplayName = (diskPath) => {
+  if (!diskPath) return "未知磁盘";
+  // 处理路径格式，无论是 "C:\" 还是 "C:\\\" 都能正确匹配
+  const driveLetter = diskPath.match(/^([A-Za-z]:)/);
+  return driveLetter ? `${driveLetter[1].replace(':', '盘')}` : "未知磁盘";
+};
+
+// 4. 获取历史数据
 const fetchHistoryData = async () => {
   try {
     const res = await service.get("/kms/realTimeData/list", {
       params: {
         pageNum: 1,
-        pageSize: PAGE_SIZE, // 关键修改：60条，覆盖20个时间点
+        pageSize: TIME_POINT_COUNT, // 只需获取20个时间点的数据
         orderByColumn: "collectTime",
         isAsc: "desc",
       },
     });
-
-    // 排序+截取：确保只保留最新的20个时间点（60条记录）
+    console.log(res);
+    // 排序+截取：确保只保留最新的20个时间点
     let sortedData = sortData(res.rows || []);
-    // 提取所有不重复的时间点，取最新的20个
-    const uniqueTimes = [...new Set(sortedData.map((item) => item.collectTime))]
-      .sort((a, b) => new Date(b) - new Date(a))
-      .slice(0, TIME_POINT_COUNT);
-    // 过滤出这20个时间点的所有记录
-    sortedData = sortedData.filter((item) =>
-      uniqueTimes.includes(item.collectTime)
-    );
+    sortedData = sortedData.slice(0, TIME_POINT_COUNT);
 
     sortedHistoryData.value = sortedData;
     extractLatestData(sortedData);
@@ -193,20 +180,15 @@ const fetchLatestData = async () => {
     const res = await service.get("/kms/realTimeData/list", {
       params: {
         pageNum: 1,
-        pageSize: PAGE_SIZE,
+        pageSize: TIME_POINT_COUNT,
         orderByColumn: "collectTime",
         isAsc: "desc",
       },
     });
-
-    // 排序+去重+截取：保留最新的20个时间点
+    console.log(res);
+    // 排序+截取：保留最新的20个时间点
     let sortedData = sortData(res.rows || []);
-    const uniqueTimes = [...new Set(sortedData.map((item) => item.collectTime))]
-      .sort((a, b) => new Date(b) - new Date(a))
-      .slice(0, TIME_POINT_COUNT);
-    sortedData = sortedData.filter((item) =>
-      uniqueTimes.includes(item.collectTime)
-    );
+    sortedData = sortedData.slice(0, TIME_POINT_COUNT);
 
     sortedHistoryData.value = sortedData;
     extractLatestData(sortedData);
@@ -444,15 +426,10 @@ const initDiskChart = () => {
       },
       formatter: function (params) {
         const index = params[0].dataIndex;
-        const diskData = [
-          latestDiskData.value.diskCInfo,
-          latestDiskData.value.diskDInfo,
-          latestDiskData.value.diskEInfo,
-        ][index];
-        const diskName = ["C盘", "D盘", "E盘"][index];
+        const diskData = latestDiskData.value.disks[index];
         if (!diskData) return "";
         return (
-          `${diskName}<br/>` +
+          `${diskData.displayName}<br/>` +
           `总大小: ${diskData.total}GB<br/>` +
           `已用大小: ${diskData.used}GB (${params[0].value}%)<br/>` +
           `剩余大小: ${diskData.free}GB (${100 - params[0].value}%)`
@@ -465,7 +442,7 @@ const initDiskChart = () => {
     yAxis: [
       {
         type: "category",
-        data: ["C盘", "D盘", "E盘"],
+        data: [], // 初始为空，会在updateCharts中动态更新
         axisLine: {
           show: false,
         },
@@ -480,7 +457,7 @@ const initDiskChart = () => {
       {
         type: "category",
         inverse: true,
-        data: ["", "", ""], // 初始为空，会在updateCharts中更新
+        data: [], // 初始为空，会在updateCharts中动态更新
         axisLine: {
           show: false,
         },
@@ -496,7 +473,7 @@ const initDiskChart = () => {
       {
         name: "磁盘使用率",
         type: "bar",
-        data: [0, 0, 0], // 初始数据，会在updateCharts中更新
+        data: [], // 初始为空，会在updateCharts中动态更新
         barWidth: 10,
         barCategoryGap: 50,
         itemStyle: {
@@ -525,7 +502,7 @@ const initDiskChart = () => {
         type: "bar",
         barCategoryGap: 50,
         barWidth: 15,
-        data: [100, 100, 100],
+        data: [], // 初始为空，会在updateCharts中动态更新
         itemStyle: {
           barBorderRadius: 20,
           color: "none",
@@ -598,27 +575,35 @@ const updateCharts = () => {
     series: [{ name: "内存使用率", data: memUsageData }],
   });
 
-  // 更新磁盘图表（水平条形图）
-  const totalSizes = [
-    latestDiskData.value.diskCInfo.total + "GB",
-    latestDiskData.value.diskDInfo.total + "GB",
-    latestDiskData.value.diskEInfo.total + "GB",
-  ];
+  // 打印CPU图表数据用于调试
+  console.log("CPU图表数据:", { xAxisData, cpuUserData, cpuSysData, cpuIdleData });
+
+  // 打印内存图表数据用于调试
+  console.log("内存图表数据:", { xAxisData, memUsageData });
+
+  // 更新磁盘图表（水平条形图）- 动态处理任意数量的磁盘
+  const disks = latestDiskData.value.disks;
+  const diskNames = disks.map(disk => disk.displayName);
+  const diskUsages = disks.map(disk => disk.usage);
+  const totalSizes = disks.map(disk => disk.total + "GB");
+  const backgroundData = Array(disks.length).fill(100);
+
+  // 打印磁盘图表数据用于调试
+  console.log("磁盘图表数据:", { diskNames, diskUsages, totalSizes });
 
   diskChart.setOption({
-    yAxis: [{ data: ["C盘", "D盘", "E盘"] }, { data: totalSizes }],
+    yAxis: [
+      { data: diskNames },
+      { data: totalSizes }
+    ],
     series: [
       {
         name: "磁盘使用率",
-        data: [
-          latestDiskData.value.diskC,
-          latestDiskData.value.diskD,
-          latestDiskData.value.diskE,
-        ],
+        data: diskUsages,
       },
       {
         name: "背景框",
-        data: [100, 100, 100],
+        data: backgroundData,
       },
     ],
   });
