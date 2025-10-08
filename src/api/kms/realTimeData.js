@@ -26,19 +26,3 @@ export function addRealTimeData(data) {
   })
 }
 
-// 修改关键指标实时数据
-export function updateRealTimeData(data) {
-  return request({
-    url: '/kms/realTimeData',
-    method: 'put',
-    data: data
-  })
-}
-
-// 删除关键指标实时数据
-export function delRealTimeData(id) {
-  return request({
-    url: '/kms/realTimeData/' + id,
-    method: 'delete'
-  })
-}

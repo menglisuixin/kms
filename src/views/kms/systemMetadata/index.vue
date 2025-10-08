@@ -23,14 +23,6 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="配置项值" prop="configValue">
-        <el-input
-          v-model="queryParams.configValue"
-          placeholder="请输入配置项值"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery"
           >搜索</el-button
@@ -97,8 +89,22 @@
       <el-table-column label="自增主键" align="center" prop="id" />
       <el-table-column label="模块名称" align="center" prop="moduleName" />
       <el-table-column label="配置项键名" align="center" prop="configKey" />
-      <el-table-column label="配置项值" align="center" prop="configValue" />
       <el-table-column label="配置备注" align="center" prop="remark" />
+      <el-table-column
+        label="1级预警阈值"
+        align="center"
+        prop="warningLevel1Value"
+      />
+      <el-table-column
+        label="2级预警阈值"
+        align="center"
+        prop="warningLevel2Value"
+      />
+      <el-table-column
+        label="3级预警阈值"
+        align="center"
+        prop="warningLevel3Value"
+      />
       <el-table-column
         label="操作"
         align="center"
@@ -124,15 +130,6 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <pagination
-      v-show="total > 0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
-
     <!-- 添加或修改系统元数据对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
       <el-form
@@ -147,11 +144,26 @@
         <el-form-item label="配置项键名" prop="configKey">
           <el-input v-model="form.configKey" placeholder="请输入配置项键名" />
         </el-form-item>
-        <el-form-item label="配置项值" prop="configValue">
-          <el-input v-model="form.configValue" placeholder="请输入配置项值" />
-        </el-form-item>
         <el-form-item label="配置备注" prop="remark">
           <el-input v-model="form.remark" placeholder="请输入配置备注" />
+        </el-form-item>
+        <el-form-item label="1级预警阈值" prop="warningLevel1Value">
+          <el-input
+            v-model="form.warningLevel1Value"
+            placeholder="请输入1级预警阈值"
+          />
+        </el-form-item>
+        <el-form-item label="2级预警阈值" prop="warningLevel2Value">
+          <el-input
+            v-model="form.warningLevel2Value"
+            placeholder="请输入2级预警阈值"
+          />
+        </el-form-item>
+        <el-form-item label="3级预警阈值" prop="warningLevel3Value">
+          <el-input
+            v-model="form.warningLevel3Value"
+            placeholder="请输入3级预警阈值"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -192,7 +204,6 @@ const data = reactive({
     pageSize: 10,
     moduleName: null,
     configKey: null,
-    configValue: null,
   },
   rules: {
     moduleName: [
@@ -201,11 +212,29 @@ const data = reactive({
     configKey: [
       { required: true, message: "配置项键名不能为空", trigger: "blur" },
     ],
-    configValue: [
-      { required: true, message: "配置项值不能为空", trigger: "blur" },
+    warningLevel1Value: [
+      { required: true, message: "1级预警阈值不能为空", trigger: "blur" },
+      {
+        pattern: /^[1-9]\d?$|^100$/,
+        message: "预警阈值必须是1-100之间的正整数",
+        trigger: "blur",
+      },
     ],
-    updateTime: [
-      { required: true, message: "更新时间不能为空", trigger: "blur" },
+    warningLevel2Value: [
+      { required: true, message: "2级预警阈值不能为空", trigger: "blur" },
+      {
+        pattern: /^[1-9]\d?$|^100$/,
+        message: "预警阈值必须是1-100之间的正整数",
+        trigger: "blur",
+      },
+    ],
+    warningLevel3Value: [
+      { required: true, message: "3级预警阈值不能为空", trigger: "blur" },
+      {
+        pattern: /^[1-9]\d?$|^100$/,
+        message: "预警阈值必须是1-100之间的正整数",
+        trigger: "blur",
+      },
     ],
   },
 });
@@ -234,9 +263,11 @@ function reset() {
     id: null,
     moduleName: null,
     configKey: null,
-    configValue: null,
-    updateTime: null,
     remark: null,
+    updateTime: null,
+    warningLevel1Value: null,
+    warningLevel2Value: null,
+    warningLevel3Value: null,
   };
   proxy.resetForm("systemMetadataRef");
 }
@@ -303,7 +334,7 @@ function submitForm() {
 function handleDelete(row) {
   const _ids = row.id || ids.value;
   proxy.$modal
-    .confirm('是否确认删除系统元数据编号为"' + _ids + '"的数据项？')
+    .confirm("是否确认删除该数据项？")
     .then(function () {
       return delSystemMetadata(_ids);
     })
