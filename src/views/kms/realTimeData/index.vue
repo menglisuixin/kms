@@ -89,10 +89,10 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="CPU使用率"
+        label="CPU总使用率"
         align="center"
         prop="cpuUsage"
-        width="100"
+        width="120"
       >
         <template #default="scope">
           <span>{{ scope.row.cpuUsage }}%</span>
@@ -129,10 +129,10 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="内存使用率"
+        label="内存总使用率"
         align="center"
         prop="memUsage"
-        width="100"
+        width="120"
       >
         <template #default="scope">
           <span>{{ scope.row.memUsage }}%</span>
@@ -175,10 +175,10 @@
         width="100"
       />
       <el-table-column
-        label="磁盘使用率"
+        label="磁盘总使用率"
         align="center"
         prop="diskUsage"
-        width="100"
+        width="120"
       >
         <template #default="scope">
           <span>{{ scope.row.diskUsage }}%</span>
