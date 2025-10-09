@@ -115,7 +115,6 @@ const extractLatestData = (sortedData) => {
     try {
       // 解析JSON字符串
       const disks = JSON.parse(firstItem.diskData);
-      console.log("解析到的磁盘数据:", disks);
 
       // 清空之前的磁盘数据
       latestDiskData.value.disks = [];
@@ -160,7 +159,6 @@ const fetchHistoryData = async () => {
         isAsc: "desc",
       },
     });
-    console.log(res);
     // 排序+截取：确保只保留最新的20个时间点
     let sortedData = sortData(res.rows || []);
     sortedData = sortedData.slice(0, TIME_POINT_COUNT);
@@ -185,7 +183,6 @@ const fetchLatestData = async () => {
         isAsc: "desc",
       },
     });
-    console.log(res);
     // 排序+截取：保留最新的20个时间点
     let sortedData = sortData(res.rows || []);
     sortedData = sortedData.slice(0, TIME_POINT_COUNT);
@@ -348,7 +345,7 @@ const initMemChart = () => {
       },
     },
     legend: {
-      data: ["mem使用率"],
+      data: ["内存使用率"],
       textStyle: { color: "#333" },
       bottom: 0,
     },
@@ -477,7 +474,7 @@ const initDiskChart = () => {
         barWidth: 10,
         barCategoryGap: 50,
         itemStyle: {
-          barBorderRadius: 20,
+          borderRadius: 20,
           color: function (params) {
             const usage = params.data;
             if (usage > 80) {
@@ -504,7 +501,7 @@ const initDiskChart = () => {
         barWidth: 15,
         data: [], // 初始为空，会在updateCharts中动态更新
         itemStyle: {
-          barBorderRadius: 20,
+          borderRadius: 20,
           color: "none",
           borderColor: "#00c1de",
           borderWidth: 3,
@@ -575,11 +572,6 @@ const updateCharts = () => {
     series: [{ name: "内存使用率", data: memUsageData }],
   });
 
-  // 打印CPU图表数据用于调试
-  console.log("CPU图表数据:", { xAxisData, cpuUserData, cpuSysData, cpuIdleData });
-
-  // 打印内存图表数据用于调试
-  console.log("内存图表数据:", { xAxisData, memUsageData });
 
   // 更新磁盘图表（水平条形图）- 动态处理任意数量的磁盘
   const disks = latestDiskData.value.disks;
@@ -587,9 +579,6 @@ const updateCharts = () => {
   const diskUsages = disks.map(disk => disk.usage);
   const totalSizes = disks.map(disk => disk.total + "GB");
   const backgroundData = Array(disks.length).fill(100);
-
-  // 打印磁盘图表数据用于调试
-  console.log("磁盘图表数据:", { diskNames, diskUsages, totalSizes });
 
   diskChart.setOption({
     yAxis: [

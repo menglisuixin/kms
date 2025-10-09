@@ -62,7 +62,6 @@ function deleteItem(item, parent) {
 }
 
 function handleInput(value) {
-  console.log(value);
   props.element.defaultValue = value
 }
 

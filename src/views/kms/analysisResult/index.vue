@@ -111,12 +111,15 @@
       v-loading="loading"
       :data="analysisResultList"
       @selection-change="handleSelectionChange"
+      style="height: calc(100vh - 400px); overflow: auto"
     >
       <el-table-column type="selection" width="55" align="center" />
       <!-- 修改序号列为自定义计算的连续序号 -->
       <el-table-column label="序号" width="60" align="center">
         <template #default="scope">
-          <span>{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+          <span>{{
+            (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1
+          }}</span>
         </template>
       </el-table-column>
       <el-table-column label="预警类型" align="center" prop="warningType" />
@@ -135,10 +138,9 @@
       </el-table-column>
       <el-table-column label="处理状态" align="center" prop="isHandled">
         <template #default="scope">
-          <el-tag
-            :type="scope.row.isHandled === 0 ? 'danger' : 'success'"
-            >{{ scope.row.isHandled === 0 ? "未处理" : "已处理" }}</el-tag
-          >
+          <el-tag :type="scope.row.isHandled === 0 ? 'danger' : 'success'">{{
+            scope.row.isHandled === 0 ? "未处理" : "已处理"
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作">
@@ -309,7 +311,6 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   loading.value = true;
   listAnalysisResult(queryParams.value).then((response) => {
-    console.log(response);
     analysisResultList.value = response.rows;
     total.value = response.total;
     loading.value = false;

@@ -20,7 +20,7 @@
     </el-row>
 
     <!-- 预警列表（复用若依Table组件） -->
-    <el-card>
+    <el-card style="margin-top: 20px">
       <el-table v-loading="loading" :data="warningList" border>
         <el-table-column label="序号" align="center" width="80">
           <template #default="scope">
@@ -100,7 +100,7 @@ const getWarningList = async () => {
     // 为数据添加前端序号
     const processedRows = rows.map((row, index) => ({
       ...row,
-      serialNumber: (pageNum.value - 1) * pageSize.value + index + 1
+      serialNumber: (pageNum.value - 1) * pageSize.value + index + 1,
     }));
     warningList.value = processedRows;
     total.value = res.total || 0;

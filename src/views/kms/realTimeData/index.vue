@@ -8,26 +8,26 @@
       v-show="showSearch"
       label-width="100px"
     >
-      <el-form-item label="CPU使用率" prop="cpuUsage">
+      <el-form-item label="CPU总使用率" prop="cpuUsage">
         <el-input
           v-model="queryParams.cpuUsage"
-          placeholder="请输入CPU使用率"
+          placeholder="请输入CPU总使用率"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="内存使用率" prop="memUsage">
+      <el-form-item label="内存总使用率" prop="memUsage">
         <el-input
           v-model="queryParams.memUsage"
-          placeholder="请输入内存使用率"
+          placeholder="请输入内存总使用率"
           clearable
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="磁盘使用率" prop="diskUsage">
+      <el-form-item label="磁盘总使用率" prop="diskUsage">
         <el-input
           v-model="queryParams.diskUsage"
-          placeholder="请输入磁盘使用率"
+          placeholder="请输入磁盘总使用率"
           clearable
           @keyup.enter="handleQuery"
         />
@@ -81,6 +81,7 @@
       v-loading="loading"
       :data="realTimeDataList"
       :span-method="mergeRowMethod"
+      style="height: calc(100vh - 400px); overflow: auto"
     >
       <el-table-column label="序号" align="center" width="80">
         <template #default="scope">
@@ -284,7 +285,6 @@ const { queryParams, form, rules } = toRefs(data);
 function getList() {
   loading.value = true;
   listRealTimeData(queryParams.value).then((response) => {
-    console.log(response);
     // 处理数据，解析diskData字段
     const processedData = processDataWithDiskInfo(response.rows);
     // 直接使用处理后的数据

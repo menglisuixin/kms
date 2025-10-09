@@ -89,7 +89,6 @@
       <el-table-column label="自增主键" align="center" prop="id" />
       <el-table-column label="模块名称" align="center" prop="moduleName" />
       <el-table-column label="配置项键名" align="center" prop="configKey" />
-      <el-table-column label="配置备注" align="center" prop="remark" />
       <el-table-column
         label="1级预警阈值"
         align="center"
@@ -106,9 +105,16 @@
         prop="warningLevel3Value"
       />
       <el-table-column
+        label="配置备注"
+        align="center"
+        prop="remark"
+        width="200"
+      />
+      <el-table-column
         label="操作"
         align="center"
         class-name="small-padding fixed-width"
+        fixed="right"
       >
         <template #default="scope">
           <el-button
@@ -144,9 +150,7 @@
         <el-form-item label="配置项键名" prop="configKey">
           <el-input v-model="form.configKey" placeholder="请输入配置项键名" />
         </el-form-item>
-        <el-form-item label="配置备注" prop="remark">
-          <el-input v-model="form.remark" placeholder="请输入配置备注" />
-        </el-form-item>
+
         <el-form-item label="1级预警阈值" prop="warningLevel1Value">
           <el-input
             v-model="form.warningLevel1Value"
@@ -164,6 +168,9 @@
             v-model="form.warningLevel3Value"
             placeholder="请输入3级预警阈值"
           />
+        </el-form-item>
+        <el-form-item label="配置备注" prop="remark">
+          <el-input v-model="form.remark" placeholder="请输入配置备注" />
         </el-form-item>
       </el-form>
       <template #footer>

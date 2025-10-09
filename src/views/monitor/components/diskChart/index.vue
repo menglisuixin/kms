@@ -100,7 +100,7 @@ function updateDiskChart(sysFiles) {
         barWidth: 10,
         barCategoryGap: 50,
         itemStyle: {
-          barBorderRadius: 20,
+          borderRadius: 20,
           color: function (params) {
             const usage = params.data;
             if (usage > 80) {
@@ -126,11 +126,11 @@ function updateDiskChart(sysFiles) {
         barWidth: 15,
         data: new Array(usages.length).fill(100),
         itemStyle: {
-          barBorderRadius: 20,
+          borderRadius: 20,
           color: "none",
           borderColor: "#00c1de",
           borderWidth: 3,
-          barBorderRadius: 15,
+          borderRadius: 15,
         },
         yAxisIndex: 1,
       },
